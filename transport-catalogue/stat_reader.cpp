@@ -30,37 +30,37 @@ namespace catalogue {
 
     namespace output {
 
-        void PrintBus(TransportCatalogue &catalogue, const std::vector<std::string> &requests) {
+        void PrintBus(std::ostream& output, TransportCatalogue &catalogue, const std::vector<std::string> &requests) {
             for (const std::string_view request: requests) {
                 const std::string_view request_text = parse_requests::Output(request);
                 if (request.substr(0, 3) == "Bus"s) {
                     if (catalogue.FindBus(request_text).stops.size()) {
                         const TransportCatalogue::BusInfo current_bus = catalogue.GetBusInfo(request_text);
-                        std::cout << "Bus "s << current_bus.name << ": "s
+                        output << "Bus "s << current_bus.name << ": "s
                                   << current_bus.num_stops << " stops on route, "
                                   << current_bus.unique_stops << " unique stops, " << std::setprecision(6)
                                   << current_bus.route_length << " route length, " << std::setprecision(6)
                                   << current_bus.route_length / current_bus.distance << " curvature"
                                   << std::endl;
                     } else {
-                        std::cout << "Bus "s << request_text << ": "s
+                        output << "Bus "s << request_text << ": "s
                                   << "not found"s << std::endl;
                     }
                 } else {
                     //вывод по запросу по остановке
                     if (catalogue.FindStop(request_text).name.empty()) {
-                        std::cout << "Stop "s << request_text << ": not found"s << std::endl;
+                        output << "Stop "s << request_text << ": not found"s << std::endl;
                         continue;
                     }
                     const std::set<std::string_view> current_stop_buses = catalogue.GetStopInfo(request_text);
                     if (current_stop_buses.empty()) {
-                        std::cout << "Stop "s << request_text << ": no buses"s << std::endl;
+                        output << "Stop "s << request_text << ": no buses"s << std::endl;
                     } else {
-                        std::cout << "Stop "s << request_text << ": buses"s;
+                        output << "Stop "s << request_text << ": buses"s;
                         for (const auto bus: current_stop_buses) {
-                            std::cout << ' ' << bus;
+                            output << ' ' << bus;
                         }
-                        std::cout << std::endl;
+                        output << std::endl;
                     }
                 }
             }

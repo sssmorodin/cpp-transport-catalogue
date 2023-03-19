@@ -7,28 +7,27 @@
 using namespace catalogue;
 
 int main() {
-    //int num_requests = ReadLineWithNumber();
-    std::vector<std::string> requests = add_requests::Input(std::cin, read::LineWithNumber());
-    TransportCatalogue trans_cat;
+    std::vector<std::string> requests = add_requests::Input(std::cin, read::LineWithNumber(std::cin));
+    TransportCatalogue transport_catalogue;
     for (const auto stop : parse_requests::FirstIteration(requests)) {
-        trans_cat.AddStop(std::move(stop));
+        transport_catalogue.AddStop(stop);
     }
 
     const auto second_iter_parse = parse_requests::SecondIteration(requests);
+    for (const auto [stop, neighbour_stops] : second_iter_parse.distances) {
+        transport_catalogue.AddDistances(stop, neighbour_stops);
+    }
     for (const auto [bus, stops] : second_iter_parse.bus) {
         Bus bus_to_add;
         bus_to_add.name = std::string(bus);
         for (auto stop: stops) {
-            bus_to_add.stops.push_back(&trans_cat.FindStop(stop));
+            bus_to_add.stops.push_back(&transport_catalogue.FindStop(stop));
         }
-        trans_cat.AddBus(std::move(bus_to_add));
-    }
-    for (const auto [stop, neighbour_stops] : second_iter_parse.distances) {
-        trans_cat.AddDistances(stop, neighbour_stops);
+        transport_catalogue.AddBus(bus_to_add);
     }
 
-    const std::vector<std::string> output_requests = add_requests::Output(std::cin, read::LineWithNumber());
-    output::PrintBus(trans_cat, output_requests);
+    const std::vector<std::string> output_requests = add_requests::Output(std::cin, read::LineWithNumber(std::cin));
+    output::PrintBus(std::cout, transport_catalogue, output_requests);
 
     return 0;
 }

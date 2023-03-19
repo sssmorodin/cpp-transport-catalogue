@@ -34,10 +34,10 @@ namespace catalogue {
         };
 
         // добавление маршрута в базу,
-        void AddBus(Bus bus);
+        void AddBus(const Bus& bus);
 
         //добавление остановки в базу,
-        void AddStop(Stop stop);
+        void AddStop(const Stop& stop);
 
         void AddDistances(std::string_view stop, std::vector<std::pair<uint32_t, std::string_view>> neighbour_stops);
 

@@ -4,16 +4,16 @@ namespace catalogue {
 
     namespace read {
 
-        std::string Line() {
+        std::string Line(std::istream &input) {
             std::string s;
-            getline(std::cin, s);
+            getline(input, s);
             return s;
         }
 
-        int LineWithNumber() {
+        int LineWithNumber(std::istream &input) {
             int result;
-            std::cin >> result;
-            read::Line();
+            input >> result;
+            read::Line(input);
             return result;
         }
 

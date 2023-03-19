@@ -14,7 +14,7 @@ namespace catalogue {
     }
 
     namespace output {
-        void PrintBus(TransportCatalogue &catalogue, const std::vector<std::string> &requests);
+        void PrintBus(std::ostream& output, TransportCatalogue &catalogue, const std::vector<std::string> &requests);
     }
 
     namespace parse_requests {

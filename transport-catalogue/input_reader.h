@@ -26,6 +26,10 @@ namespace catalogue {
     struct Bus {
         std::string name;
         std::vector<Stop*> stops;
+        double distance = 0;
+        uint64_t route_length = 0;
+
+        std::pair<double, uint64_t> ComputeRouteLength();
     };
 
     struct SecondIterationParse {
@@ -43,8 +47,8 @@ namespace catalogue {
     }
 
     namespace read {
-        std::string Line();
-        int LineWithNumber();
+        std::string Line(std::istream &input);
+        int LineWithNumber(std::istream &input);
     }
 
 }

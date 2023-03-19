@@ -6,16 +6,25 @@ namespace catalogue {
         return hasher_(pointer_pair.first) + 37 * hasher_(pointer_pair.second);
     }
 
-    void TransportCatalogue::AddBus(Bus bus) {
+    void TransportCatalogue::AddBus(const Bus& bus) {
         buses_.push_back(bus);
         busname_to_bus_[buses_.back().name] = &buses_.back();
         for (auto stop: bus.stops) {
             stopname_to_buses_[stop->name].insert(buses_.back().name);
         }
+
+        for (auto it = FindBus(bus.name).stops.begin() + 1; it != FindBus(bus.name).stops.end(); ++it) {
+            const auto prev_it = it - 1;
+            FindBus(bus.name).distance += ComputeDistance(FindStop((*prev_it)->name).coordinates,
+                                                          FindStop((*it)->name).coordinates);
+            FindBus(bus.name).route_length += distance_table_.count({*prev_it, *it})
+                                            ? distance_table_.at({*prev_it, *it})
+                                            : distance_table_.at({*it, *prev_it});
+        }
     }
 
 //добавление остановки в базу,
-    void TransportCatalogue::AddStop(Stop stop) {
+    void TransportCatalogue::AddStop(const Stop& stop) {
         stops_.push_back(stop);
         stopname_to_stop_[stops_.back().name] = &stops_.back();
         stopname_to_buses_[stops_.back().name] = std::set<std::string_view>{};
@@ -42,28 +51,20 @@ namespace catalogue {
 //получение информации о маршруте
     TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(const std::string_view name) {
         TransportCatalogue::BusInfo out;
-        const auto bus = TransportCatalogue::FindBus(name).stops;
+        const auto bus = TransportCatalogue::FindBus(name);
         out.name = name;
 
-        size_t num_stops = bus.size();
+        size_t num_stops = bus.stops.size();
         out.num_stops = num_stops;
 
         std::set<Stop *> unique;
-        std::for_each(bus.begin(), bus.end(), [&unique](const auto &stop) {
+        std::for_each(bus.stops.begin(), bus.stops.end(), [&unique](const auto &stop) {
             unique.insert(stop);
         });
         out.unique_stops = unique.size();
 
-        double distance = 0;
-        uint64_t route_length = 0;
-        for (auto it = bus.begin() + 1; it != bus.end(); ++it) {
-            const auto prev_it = it - 1;
-            distance += ComputeDistance(FindStop((*prev_it)->name).coordinates, FindStop((*it)->name).coordinates);
-            route_length += distance_table_.count({*prev_it, *it}) ? distance_table_.at({*prev_it, *it})
-                                                                   : distance_table_.at({*it, *prev_it});
-        }
-        out.distance = distance;
-        out.route_length = route_length;
+        out.distance = bus.distance;
+        out.route_length = bus.route_length;
 
         return out;
     }
