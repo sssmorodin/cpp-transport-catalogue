@@ -21,6 +21,16 @@ namespace catalogue {
                                             ? distance_table_.at({*prev_it, *it})
                                             : distance_table_.at({*it, *prev_it});
         }
+        if (!bus.is_roundtrip) {
+            for (auto it = FindBus(bus.name).stops.rbegin() + 1; it != FindBus(bus.name).stops.rend(); ++it) {
+                const auto prev_it = it - 1;
+                FindBus(bus.name).distance += ComputeDistance(FindStop((*prev_it)->name).coordinates,
+                                                              FindStop((*it)->name).coordinates);
+                FindBus(bus.name).route_length += distance_table_.count({*prev_it, *it})
+                                                  ? distance_table_.at({*prev_it, *it})
+                                                  : distance_table_.at({*it, *prev_it});
+            }
+        }
     }
 
 //добавление остановки в базу,
@@ -31,7 +41,7 @@ namespace catalogue {
     }
 
 //поиск маршрута по имени
-    Bus &TransportCatalogue::FindBus(const std::string_view bus_name) {
+    Bus &TransportCatalogue::FindBus(const std::string_view bus_name) const {
         if (busname_to_bus_.count(bus_name)) {
             return *busname_to_bus_.at(bus_name);
         }
@@ -40,7 +50,7 @@ namespace catalogue {
     }
 
 //поиск остановки по имени
-    Stop &TransportCatalogue::FindStop(const std::string_view stop_name) {
+    Stop &TransportCatalogue::FindStop(const std::string_view stop_name) const {
         if (stopname_to_stop_.count(stop_name)) {
             return *stopname_to_stop_.at(stop_name);
         }
@@ -48,28 +58,7 @@ namespace catalogue {
         return stop;
     }
 
-//получение информации о маршруте
-    TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(const std::string_view name) {
-        TransportCatalogue::BusInfo out;
-        const auto bus = TransportCatalogue::FindBus(name);
-        out.name = name;
-
-        size_t num_stops = bus.stops.size();
-        out.num_stops = num_stops;
-
-        std::set<Stop *> unique;
-        std::for_each(bus.stops.begin(), bus.stops.end(), [&unique](const auto &stop) {
-            unique.insert(stop);
-        });
-        out.unique_stops = unique.size();
-
-        out.distance = bus.distance;
-        out.route_length = bus.route_length;
-
-        return out;
-    }
-
-    std::set<std::string_view> TransportCatalogue::GetStopInfo(const std::string_view name) {
+    std::set<std::string_view> TransportCatalogue::GetStopInfo(const std::string_view name) const {
         if (stopname_to_buses_.count(name)) {
             return stopname_to_buses_.at(name);
         }
@@ -77,10 +66,46 @@ namespace catalogue {
     }
 
     void TransportCatalogue::AddDistances(std::string_view stop,
-                                          std::vector<std::pair<uint32_t, std::string_view>> neighbour_stops) {
+                                          const std::vector<std::pair<uint32_t, std::string_view>>& neighbour_stops) {
         for (auto neighbour_stop: neighbour_stops) {
             distance_table_[{&FindStop(stop), &FindStop(neighbour_stop.second)}] = neighbour_stop.first;
+            if (!distance_table_[{&FindStop(neighbour_stop.second), &FindStop(stop)}]) {
+                distance_table_[{&FindStop(neighbour_stop.second), &FindStop(stop)}] = neighbour_stop.first;
+            }
         }
+    }
+
+    // возвращает координаты всех остановок, через которые проходит хотя бы один маршрут
+	const std::vector<geo::Coordinates> TransportCatalogue::GetAllStopsCoordinates() const {
+        std::vector<geo::Coordinates> out;
+        out.reserve(stops_.size());
+        for (const auto& stop : stops_) {
+            if (!GetStopInfo(stop.name).empty()) {
+                out.push_back(stop.coordinates);
+            }
+        }
+        return out;
+    }
+
+    const std::set<std::string_view> TransportCatalogue::GetSortedBusNames() const {
+        std::set<std::string_view> out;
+        for (const auto& bus : buses_) {
+            if (!bus.stops.empty()) {
+                out.insert(bus.name);
+            }
+        }
+        return out;
+    }
+
+    // возвращает отсортированные названия всех остановок, через которые проходит хотя бы один маршрут
+    const std::set<std::string_view> TransportCatalogue::GetAllStopsNames() const {
+        std::set<std::string_view> out;
+        for (const auto& stop : stops_) {
+            if (!GetStopInfo(stop.name).empty()) {
+                out.insert(stop.name);
+            }
+        }
+        return out;
     }
 
 }

@@ -7,7 +7,8 @@
 #include <algorithm>
 #include <set>
 
-#include "input_reader.h"
+#include "domain.h"
+#include "json_reader.h"
 #include "geo.h"
 
 namespace catalogue {
@@ -39,18 +40,24 @@ namespace catalogue {
         //добавление остановки в базу,
         void AddStop(const Stop& stop);
 
-        void AddDistances(std::string_view stop, std::vector<std::pair<uint32_t, std::string_view>> neighbour_stops);
+        void AddDistances(std::string_view stop, 
+                          const std::vector<std::pair<uint32_t, std::string_view>>& neighbour_stops);
 
         //поиск маршрута по имени,
-        Bus& FindBus(const std::string_view bus_name);
+        Bus& FindBus(const std::string_view bus_name) const;
 
         //поиск остановки по имени
-        Stop& FindStop(const std::string_view stop_name);
+        Stop& FindStop(const std::string_view stop_name) const;
 
-        //получение информации о маршруте
-        BusInfo GetBusInfo(const std::string_view name);
+        //получение информации об остановке
+        std::set<std::string_view> GetStopInfo(const std::string_view name) const;
+		
+		const std::vector<geo::Coordinates> GetAllStopsCoordinates() const;
 
-        std::set<std::string_view> GetStopInfo(const std::string_view name);
+        // возвращает сет названий маршрутов, имеющих остановки
+        const std::set<std::string_view> GetSortedBusNames() const;
+
+        const std::set<std::string_view> GetAllStopsNames() const;
 
     private:
         std::deque<Stop> stops_;
