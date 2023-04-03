@@ -7,9 +7,7 @@
 
 namespace catalogue {
 
-    namespace parse_requests {
-
-        std::deque<Stop> FirstIteration(const json::Document& json_requests) {
+        std::deque<Stop> JSONReader::FirstIteration(const json::Document& json_requests) {
             const auto& base_requests = json_requests.GetRoot().AsMap().at("base_requests"s);
             std::deque<Stop> stops;
             for (const auto& request : base_requests.AsArray()) {
@@ -24,7 +22,7 @@ namespace catalogue {
             return stops;
         }
 
-        SecondIterationParse SecondIteration(const json::Document& json_requests) {
+    JSONReader::SecondIterationParse JSONReader::SecondIteration(const json::Document& json_requests) {
             const auto &base_requests = json_requests.GetRoot().AsMap().at("base_requests"s);
 
             SecondIterationParse out;
@@ -49,7 +47,7 @@ namespace catalogue {
             return out;
         }
 
-        std::vector<std::pair<uint32_t, std::string_view>> Distances(const json::Node& node) {
+        std::vector<std::pair<uint32_t, std::string_view>> JSONReader::Distances(const json::Node& node) {
             std::vector<std::pair<uint32_t, std::string_view>> out;
             for (const auto& [stop, distance] : node.AsMap()) {
                 out.push_back({distance.AsInt(), stop});
@@ -57,7 +55,7 @@ namespace catalogue {
             return out;
         }
 		
-		svg::Color GetColor(const json::Node color) {
+		svg::Color JSONReader::GetColor(const json::Node color) {
             svg::Color out;
             if (color.IsString()) {
                 out = color.AsString();
@@ -74,9 +72,9 @@ namespace catalogue {
             return out;
         }
 
-        RenderSettings ReadRenderSettings(const json::Document& json_requests) {
+        RenderSettings JSONReader::ReadRenderSettings() {
             RenderSettings out;
-            const auto &render_settings = json_requests.GetRoot().AsMap().at("render_settings"s);
+            const auto &render_settings = json_requests_.GetRoot().AsMap().at("render_settings"s);
 
             out.width = render_settings.AsMap().at("width"s).AsDouble();
             out.height = render_settings.AsMap().at("height"s).AsDouble();
@@ -104,6 +102,38 @@ namespace catalogue {
             return out;
         }
 
-    } // namespace parse_requests
+    JSONReader::JSONReader(std::istream &input)
+            : json_requests_(json::Load(input))
+            , renderer_(ReadRenderSettings())
+    {
+        for (const auto& stop : FirstIteration(json_requests_)) {
+            transport_catalogue_.AddStop(stop);
+        }
+        const auto second_iter_parse = SecondIteration(json_requests_);
+        for (const auto& [stop, neighbour_stops] : second_iter_parse.distances) {
+            transport_catalogue_.AddDistances(stop, neighbour_stops);
+        }
+        for (const auto& [bus, stops] : second_iter_parse.bus) {
+            Bus bus_to_add;
+            bus_to_add.name = std::string(bus);
+            for (const auto& stop: stops) {
+                bus_to_add.stops.push_back(&transport_catalogue_.FindStop(stop));
+            }
+            bus_to_add.is_roundtrip = second_iter_parse.busname_to_roundtrip.at(bus);
+            transport_catalogue_.AddBus(bus_to_add);
+        }
+
+    }
+
+    const json::Document& JSONReader::GetJSONRequests() {
+            return json_requests_;
+    }
+    const TransportCatalogue& JSONReader::GetTransportCatalogue() {
+            return transport_catalogue_;
+    }
+    const renderer::MapRenderer& JSONReader::GetRenderer() {
+        return renderer_;
+    }
+
 
 } // namespace catalogue

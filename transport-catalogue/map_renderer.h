@@ -8,13 +8,14 @@
 #include "geo.h"
 #include "svg.h"
 #include "domain.h"
+#include "transport_catalogue.h"
 
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <optional>
 #include <vector>
-
+#include <set>
 
 namespace catalogue {
 
@@ -129,6 +130,7 @@ namespace renderer {
         std::vector<svg::Text> DrawBusName(const Bus& bus, int counter, const SphereProjector& sphere_projector) const;
         const svg::Circle DrawStopSymbol(geo::Coordinates coordinates, const SphereProjector& sphere_projector) const;
         const std::pair<svg::Text, svg::Text> DrawStopName(const Stop& stop, const SphereProjector& sphere_projector) const;
+        svg::Document RenderMap(const TransportCatalogue& db_) const;
 
     private:
         const RenderSettings settings_;

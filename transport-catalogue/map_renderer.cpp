@@ -109,6 +109,53 @@ namespace catalogue {
             return {route_start_underlayer, route_start_text};
         }
 
+        svg::Document MapRenderer::RenderMap(const TransportCatalogue& db_) const {
+            svg::Document document;
+            //формируем вектор координат всех остановок
+            const auto all_stops_coord = db_.GetAllStopsCoordinates();
+            const auto buses = db_.GetSortedBusNames();
+
+            // отрисовка линий маршрутов
+            const SphereProjector sphere_projector(all_stops_coord.begin(), all_stops_coord.end(),
+                                                   settings_.width, settings_.height,
+                                                   settings_.padding);
+            size_t counter = 0;
+            for (const auto& bus_name : buses) {
+                const auto bus = db_.FindBus(bus_name);
+                svg::Polyline route_draw = DrawRoute(bus, counter, sphere_projector);
+                document.Add(std::move(route_draw));
+                ++counter;
+            }
+            // отрисовка названий маршрутов
+            counter = 0;
+            for (const auto& bus_name : buses) {
+                const auto bus = db_.FindBus(bus_name);
+                if (bus.stops.empty()) {
+                    continue;
+                }
+                std::vector<svg::Text> route_name = DrawBusName(bus, counter, sphere_projector);
+                for (const auto& figure : route_name) {
+                    document.Add(std::move(figure));
+                }
+                ++counter;
+            }
+
+            // отрисовка круглых обозначний остановок
+            const std::set<std::string_view> stops_names = db_.GetAllStopsNames();
+            for (const auto& stop_name : stops_names) {
+                svg::Circle circle = DrawStopSymbol(db_.FindStop(stop_name).coordinates, sphere_projector);
+                document.Add(std::move(circle));
+            }
+
+            // отрисовка названий остановок
+            for (const auto& stop_name : stops_names) {
+                std::pair<svg::Text, svg::Text> stop = DrawStopName(db_.FindStop(stop_name), sphere_projector);
+                document.Add(std::move(stop.first));
+                document.Add(std::move(stop.second));
+            }
+            return document;
+        }
+
     } // namespace renderer
 
 } // namespace catalogue

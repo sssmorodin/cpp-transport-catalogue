@@ -40,6 +40,8 @@ private:
 #include <iomanip>
 #include <optional>
 #include "transport_catalogue.h"
+#include "map_renderer.h"
+#include "json.h"
 
 using namespace std::string_literals;
 
@@ -56,9 +58,6 @@ namespace catalogue {
 
         // Возвращает JSON документ с информацией по обработанным запросам
         json::Document MakeJSONDocument(const json::Document& json_requests);
-
-        // Возвращает карту маршрутов в формате SVG
-        svg::Document RenderMap() const;
 
     private:
         // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
