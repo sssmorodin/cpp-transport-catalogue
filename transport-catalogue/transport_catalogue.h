@@ -8,7 +8,6 @@
 #include <set>
 
 #include "domain.h"
-//#include "json_reader.h"
 #include "geo.h"
 
 namespace catalogue {

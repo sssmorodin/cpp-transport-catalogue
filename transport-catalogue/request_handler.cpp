@@ -1,12 +1,5 @@
 #include "request_handler.h"
 
-/*
- * Здесь можно было бы разместить код обработчика запросов к базе, содержащего логику, которую не
- * хотелось бы помещать ни в transport_catalogue, ни в json reader.
- *
- * Если вы затрудняетесь выбрать, что можно было бы поместить в этот файл,
- * можете оставить его пустым.
- */
 using namespace catalogue;
 
 RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer)
@@ -40,48 +33,59 @@ std::set<std::string_view> RequestHandler::GetStopInfo(const std::string_view& n
 
 json::Document RequestHandler::MakeJSONDocument(const json::Document& json_requests) {
     json::Array out;
-    const auto& stat_requests = json_requests.GetRoot().AsMap().at("stat_requests"s);
+    const auto& stat_requests = json_requests.GetRoot().AsDict().at("stat_requests"s);
     for (const auto& request : stat_requests.AsArray()) {
-        if("Stop"s == request.AsMap().at("type"s).AsString()) {
-            json::Node dict_node;
-            if (db_.FindStop(request.AsMap().at("name"s).AsString()).name.empty()) {
-                dict_node = json::Node{json::Dict{{"error_message"s, "not found"s},
-                                                  {"request_id"s,    request.AsMap().at("id"s).AsInt()}}};
+        json::Node dict_node;
+        if("Stop"s == request.AsDict().at("type"s).AsString()) {
+            if (db_.FindStop(request.AsDict().at("name"s).AsString()).name.empty()) {
+                dict_node = json::Builder{}.StartDict()
+                                               .Key("error_message"s).Value("not found"s)
+                                               .Key("request_id"s).Value(request.AsDict().at("id"s).AsInt())
+                                           .EndDict()
+                                           .Build();
             } else {
-                const auto buses = GetStopInfo(request.AsMap().at("name"s).AsString());
+                const auto buses = GetStopInfo(request.AsDict().at("name"s).AsString());
                 // формируем массив автобусов, проходящих через данную остановку
                 json::Array buses_node;
                 buses_node.reserve(buses.size());
                 for (const auto &bus: buses) {
                     buses_node.push_back(std::move(json::Node{std::string(bus)}));
                 }
-                dict_node = json::Node{json::Dict{{"buses"s,      buses_node},
-                                                  {"request_id"s, request.AsMap().at("id"s).AsInt()}}};
+                dict_node = json::Builder{}.StartDict()
+                                               .Key("buses"s).Value(buses_node)
+                                               .Key("request_id"s).Value(request.AsDict().at("id"s).AsInt())
+                                           .EndDict()
+                                           .Build();
             }
-            out.push_back(dict_node);
-        } else if ("Map"s == request.AsMap().at("type"s).AsString()) {
+        } else if ("Map"s == request.AsDict().at("type"s).AsString()) {
             std::ostringstream out_stream;
             renderer_.RenderMap(db_).Render(out_stream);
-            json::Node dict_node = json::Dict{{"map"s, json::Node(out_stream.str())},
-                                              {"request_id"s, request.AsMap().at("id"s).AsInt()}};
-            out.push_back(dict_node);
+            dict_node = json::Builder{}.StartDict()
+                                           .Key("map"s).Value(out_stream.str())
+                                           .Key("request_id"s).Value(request.AsDict().at("id"s).AsInt())
+                                       .EndDict()
+                                       .Build();
         } else {
             // случай запроса Bus
-            json::Node dict_node;
-            if (db_.FindBus(request.AsMap().at("name"s).AsString()).name.empty()) {
-                dict_node = json::Node{json::Dict{ {"error_message"s, "not found"s},
-                                                   {"request_id"s, request.AsMap().at("id"s).AsInt()} }};
+            if (db_.FindBus(request.AsDict().at("name"s).AsString()).name.empty()) {
+                dict_node = json::Builder{}.StartDict()
+                                               .Key("error_message"s).Value("not found"s)
+                                               .Key("request_id"s).Value(request.AsDict().at("id"s).AsInt())
+                                           .EndDict()
+                                           .Build();
             } else {
-                const auto bus_info = GetBusInfo(request.AsMap().at("name"s).AsString());
-                dict_node = json::Node{json::Dict{{"curvature"s, bus_info.route_length / bus_info.distance},
-                                                  {"request_id"s, request.AsMap().at("id"s).AsInt()},
-                                                  {"route_length"s, static_cast<int>(bus_info.route_length)},
-                                                  {"stop_count"s, static_cast<int>(bus_info.num_stops)},
-                                                  {"unique_stop_count"s, static_cast<int>(bus_info.unique_stops)}
-                }};
+                const auto bus_info = GetBusInfo(request.AsDict().at("name"s).AsString());
+                dict_node = json::Builder{}.StartDict()
+                                               .Key("curvature"s).Value(bus_info.route_length / bus_info.distance)
+                                               .Key("request_id"s).Value(request.AsDict().at("id"s).AsInt())
+                                               .Key("route_length"s).Value(static_cast<int>(bus_info.route_length))
+                                               .Key("stop_count"s).Value(static_cast<int>(bus_info.num_stops))
+                                               .Key("unique_stop_count"s).Value(static_cast<int>(bus_info.unique_stops))
+                                           .EndDict()
+                                           .Build();
             }
-            out.push_back(dict_node);
         }
+        out.push_back(dict_node);
     }
     json::Document out_doc(json::Node{out});
     return out_doc;
