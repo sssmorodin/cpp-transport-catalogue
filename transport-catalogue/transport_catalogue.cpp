@@ -40,6 +40,10 @@ namespace catalogue {
         stopname_to_buses_[stops_.back().name] = std::set<std::string_view>{};
     }
 
+    void TransportCatalogue::AddRoutingSettings(RoutingSettings routing_settings) {
+        routing_settings_ = routing_settings;
+    }
+
 //поиск маршрута по имени
     Bus &TransportCatalogue::FindBus(const std::string_view bus_name) const {
         if (busname_to_bus_.count(bus_name)) {
@@ -97,13 +101,35 @@ namespace catalogue {
         return out;
     }
 
-    // возвращает отсортированные названия всех остановок, через которые проходит хотя бы один маршрут
-    const std::set<std::string_view> TransportCatalogue::GetAllStopsNames() const {
+    const std::set<std::string_view> TransportCatalogue::GetSortedOnRouteStopsNames() const {
         std::set<std::string_view> out;
         for (const auto& stop : stops_) {
             if (!GetStopInfo(stop.name).empty()) {
                 out.insert(stop.name);
             }
+        }
+        return out;
+    }
+
+    const RoutingSettings& TransportCatalogue::GetRoutingSettings() const {
+        return routing_settings_;
+    }
+
+    uint32_t TransportCatalogue::GetDistance(Stop* from, Stop* to) const {
+        if (distance_table_.count({from, to})) {
+            return distance_table_.at({from, to});
+        } else if (distance_table_.count({to, from})) {
+            return distance_table_.at({to, from});
+        } else {
+            return 0;
+        }
+    }
+
+    const std::vector<std::string_view> TransportCatalogue::GetAllStopsNames() const {
+        std::vector<std::string_view> out;
+        out.reserve(stopname_to_stop_.size());
+        for (const auto& [stopname, _] : stopname_to_stop_) {
+            out.push_back(stopname);
         }
         return out;
     }

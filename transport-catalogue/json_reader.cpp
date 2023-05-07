@@ -10,12 +10,15 @@ namespace catalogue {
         std::deque<Stop> JSONReader::FirstIteration(const json::Document& json_requests) {
             const auto& base_requests = json_requests.GetRoot().AsDict().at("base_requests"s);
             std::deque<Stop> stops;
+            size_t i = 0;
             for (const auto& request : base_requests.AsArray()) {
                 Stop current_stop;
                 if("Stop"s == request.AsDict().at("type"s).AsString()) {
                     current_stop.name = request.AsDict().at("name"s).AsString();
                     current_stop.coordinates = {request.AsDict().at("latitude"s).AsDouble(),
                                                 request.AsDict().at("longitude"s).AsDouble()};
+                    current_stop.id_wait_start = i++;
+                    current_stop.id_wait_end = i++;
                     stops.push_back(current_stop);
                 }
             }
@@ -120,7 +123,16 @@ namespace catalogue {
             bus_to_add.is_roundtrip = second_iter_parse.busname_to_roundtrip.at(bus);
             transport_catalogue_.AddBus(bus_to_add);
         }
+        transport_catalogue_.AddRoutingSettings(ReadRouteSettings(json_requests_));
+    }
 
+    // RoutingSettings routing_settings
+    RoutingSettings JSONReader::ReadRouteSettings(const json::Document& json_requests) {
+        RoutingSettings out;
+        const auto &routing_settings = json_requests.GetRoot().AsDict().at("routing_settings"s);
+        out.bus_wait_time = routing_settings.AsDict().at("bus_wait_time"s).AsInt();
+        out.bus_velocity = routing_settings.AsDict().at("bus_velocity"s).AsDouble();
+        return out;
     }
 
     const json::Document& JSONReader::GetJSONRequests() {

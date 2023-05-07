@@ -135,7 +135,7 @@ namespace catalogue {
             }
 
             // отрисовка круглых обозначний остановок
-            const std::set<std::string_view> stops_names = db_.GetAllStopsNames();
+            const std::set<std::string_view> stops_names = db_.GetSortedOnRouteStopsNames();
             for (const auto& stop_name : stops_names) {
                 svg::Circle circle = DrawStopSymbol(db_.FindStop(stop_name).coordinates, sphere_projector);
                 document.Add(std::move(circle));

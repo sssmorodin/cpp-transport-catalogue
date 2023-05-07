@@ -4,10 +4,11 @@ using namespace catalogue;
 
 RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer)
     : db_(db)
-    , renderer_(renderer) {
+    , renderer_(renderer)
+    , transport_router_(TransportRouter(db)) {
 }
 
-TransportCatalogue::BusInfo RequestHandler::GetBusInfo(const std::string_view& name) {
+TransportCatalogue::BusInfo RequestHandler::GetBusInfo(const std::string_view& name) const {
     TransportCatalogue::BusInfo out;
     const auto bus = db_.FindBus(name);
     out.name = name;
@@ -30,6 +31,11 @@ TransportCatalogue::BusInfo RequestHandler::GetBusInfo(const std::string_view& n
 std::set<std::string_view> RequestHandler::GetStopInfo(const std::string_view& name) const {
         return db_.GetStopInfo(name);
 }
+
+catalogue::RouteInfo RequestHandler::GetRouteInfo(const std::string_view& from, const std::string_view& to) const {
+    return transport_router_.BuildRoute(from, to);
+}
+
 
 json::Document RequestHandler::MakeJSONDocument(const json::Document& json_requests) {
     json::Array out;
@@ -65,8 +71,7 @@ json::Document RequestHandler::MakeJSONDocument(const json::Document& json_reque
                                            .Key("request_id"s).Value(request.AsDict().at("id"s).AsInt())
                                        .EndDict()
                                        .Build();
-        } else {
-            // случай запроса Bus
+        } else if ("Bus"s == request.AsDict().at("type"s).AsString()) {
             if (db_.FindBus(request.AsDict().at("name"s).AsString()).name.empty()) {
                 dict_node = json::Builder{}.StartDict()
                                                .Key("error_message"s).Value("not found"s)
@@ -84,6 +89,40 @@ json::Document RequestHandler::MakeJSONDocument(const json::Document& json_reque
                                            .EndDict()
                                            .Build();
             }
+        } else if ("Route"s == request.AsDict().at("type"s).AsString()) {
+            const auto route_info = GetRouteInfo(request.AsDict().at("from"s).AsString(),
+                                                 request.AsDict().at("to"s).AsString());
+
+            json::Dict temp_dict_node;
+            temp_dict_node.insert({ "request_id"s, request.AsDict().at("id"s).AsInt() });
+
+            if (route_info.not_found_flag) {
+                temp_dict_node.insert({ "error_message"s, "not found"s });
+            } else {
+                temp_dict_node.insert({ "total_time"s, route_info.total_time });
+
+                json::Array items;
+                for (auto& item : route_info.items) {
+                    json::Dict item_node;
+                    switch (item->route_act_type) {
+                        case RouteActType::WAIT:
+                            item_node.insert({ "type"s, "Wait"s });
+                            item_node.insert({ "stop_name"s, std::string(item->name) });
+                            item_node.insert({ "time"s, item->time });
+                            break;
+                        case RouteActType::BUS:
+                            item_node.insert({ "type"s, "Bus"s });
+                            item_node.insert({ "bus"s, std::string(item->name) });
+                            item_node.insert({ "span_count"s, static_cast<int>(item->span_count) });
+                            item_node.insert({ "time"s, item->time });
+                            break;
+                    }
+                    items.push_back(item_node);
+                }
+
+                temp_dict_node.insert({ "items"s, items });
+            }
+            dict_node = std::move(temp_dict_node);
         }
         out.push_back(dict_node);
     }

@@ -32,6 +32,7 @@ namespace catalogue {
         std::vector<std::pair<uint32_t, std::string_view>> Distances(const json::Node &node);
         svg::Color GetColor(const json::Node color);
         RenderSettings ReadRenderSettings();
+        RoutingSettings ReadRouteSettings(const json::Document& json_requests);
         const json::Document& GetJSONRequests();
         const TransportCatalogue& GetTransportCatalogue();
         const renderer::MapRenderer& GetRenderer();
