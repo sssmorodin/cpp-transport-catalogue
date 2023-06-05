@@ -34,6 +34,15 @@ namespace catalogue {
         router_ = std::make_unique<graph::Router<double>>(graph_);
     }
 
+    TransportRouter::TransportRouter(const TransportCatalogue& db, graph::DirectedWeightedGraph<double>&& graph,
+                                     const std::unordered_map<graph::EdgeId, RouteAct>&& edge_id_to_route_act)
+            : db_(db)
+            , graph_(std::move(graph))
+            , edge_id_to_route_act_(std::move(edge_id_to_route_act)) {
+        router_ = std::make_unique<graph::Router<double>>(graph_);
+    }
+
+
     const catalogue::RouteInfo TransportRouter::BuildRoute(std::string_view from, std::string_view to) const {
         catalogue::RouteInfo out;
         auto route_info = router_->BuildRoute(db_.FindStop(from).id_wait_start, db_.FindStop(to).id_wait_start);
@@ -48,5 +57,17 @@ namespace catalogue {
             out.not_found_flag = true;
         }
         return out;
+    }
+
+    const graph::Router<double>& TransportRouter::GetRouter() const {
+        return *router_.get();
+    }
+
+    const graph::DirectedWeightedGraph<double>& TransportRouter::GetGraph() const {
+        return graph_;
+    }
+
+    const std::unordered_map<graph::EdgeId, RouteAct>& TransportRouter::GetEdgeIdToRouteAct() const {
+        return edge_id_to_route_act_;
     }
 } // namespace catalogue

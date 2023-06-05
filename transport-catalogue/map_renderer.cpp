@@ -150,6 +150,11 @@ namespace catalogue {
             return document;
         }
 
+        const RenderSettings& MapRenderer::GetRenderSettings() const {
+            return settings_;
+        }
+
+
     } // namespace renderer
 
 } // namespace catalogue

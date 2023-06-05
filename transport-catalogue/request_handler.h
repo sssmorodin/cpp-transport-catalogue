@@ -19,6 +19,8 @@ namespace catalogue {
     class RequestHandler {
     public:
         RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer);
+        RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer,
+                       const TransportRouter& transport_router);
 
         // Возвращает информацию о маршруте (запрос Bus)
         TransportCatalogue::BusInfo GetBusInfo(const std::string_view& name) const;
@@ -32,11 +34,13 @@ namespace catalogue {
         // Возвращает информацию о построенном маршруте
         catalogue::RouteInfo GetRouteInfo(const std::string_view& from, const std::string_view& to) const;
 
+        const TransportRouter& GetTransportRouter() const;
+
     private:
         // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
         const TransportCatalogue& db_;
         const renderer::MapRenderer& renderer_;
-        TransportRouter transport_router_;
+        const TransportRouter& transport_router_;
     };
 
 }

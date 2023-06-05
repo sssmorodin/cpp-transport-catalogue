@@ -27,6 +27,7 @@ namespace catalogue {
             std::unordered_map<std::string_view, std::vector<std::pair<uint32_t, std::string_view>>> distances;
         };
 
+        TransportCatalogue BuildTransportCatalogue();
         std::deque<Stop> FirstIteration(const json::Document &json_requests);
         SecondIterationParse SecondIteration(const json::Document &json_requests);
         std::vector<std::pair<uint32_t, std::string_view>> Distances(const json::Node &node);
@@ -36,11 +37,13 @@ namespace catalogue {
         const json::Document& GetJSONRequests();
         const TransportCatalogue& GetTransportCatalogue();
         const renderer::MapRenderer& GetRenderer();
+        const std::string GetFilename();
+
 
     private:
         const json::Document json_requests_;
-        TransportCatalogue transport_catalogue_;
-        renderer::MapRenderer renderer_;
+        std::unique_ptr<renderer::MapRenderer> renderer_;
+        std::string filename_;
     };
 
 } // namespace catalogue

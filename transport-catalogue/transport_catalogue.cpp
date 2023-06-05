@@ -134,4 +134,12 @@ namespace catalogue {
         return out;
     }
 
+    const std::unordered_map<std::pair<Stop*, Stop*>, uint32_t, TransportCatalogue::PairPointerHasher>& TransportCatalogue::GetDistanceTable() const {
+        return distance_table_;
+    }
+
+    void TransportCatalogue::AddDistanceTable(std::unordered_map<std::pair<Stop*, Stop*>, uint32_t, PairPointerHasher> distance_table) {
+        distance_table_ = distance_table;
+    }
+
 }

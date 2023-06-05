@@ -126,6 +126,7 @@ namespace renderer {
         const svg::Circle DrawStopSymbol(geo::Coordinates coordinates, const SphereProjector& sphere_projector) const;
         const std::pair<svg::Text, svg::Text> DrawStopName(const Stop& stop, const SphereProjector& sphere_projector) const;
         svg::Document RenderMap(const TransportCatalogue& db_) const;
+        const RenderSettings& GetRenderSettings() const;
 
     private:
         const RenderSettings settings_;

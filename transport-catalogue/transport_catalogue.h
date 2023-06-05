@@ -69,6 +69,10 @@ namespace catalogue {
 
         const std::vector<std::string_view> GetAllStopsNames() const;
 
+        const std::unordered_map<std::pair<Stop*, Stop*>, uint32_t, PairPointerHasher>& GetDistanceTable() const;
+
+        void AddDistanceTable(std::unordered_map<std::pair<Stop*, Stop*>, uint32_t, PairPointerHasher> distance_table);
+
     private:
         std::deque<Stop> stops_;
         std::unordered_map<std::string_view, Stop*> stopname_to_stop_;

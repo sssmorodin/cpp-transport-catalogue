@@ -1,13 +1,10 @@
 #include "json_reader.h"
 
-/*
- * Здесь можно разместить код наполнения транспортного справочника данными из JSON,
- * а также код обработки запросов к базе и формирование массива ответов в формате JSON
- */
 
 namespace catalogue {
 
         std::deque<Stop> JSONReader::FirstIteration(const json::Document& json_requests) {
+
             const auto& base_requests = json_requests.GetRoot().AsDict().at("base_requests"s);
             std::deque<Stop> stops;
             size_t i = 0;
@@ -105,28 +102,33 @@ namespace catalogue {
 
     JSONReader::JSONReader(std::istream &input)
             : json_requests_(json::Load(input))
-            , renderer_(ReadRenderSettings())
     {
+        filename_ = json_requests_.GetRoot().AsDict().at("serialization_settings"s).AsDict().at("file"s).AsString();
+    }
+
+    TransportCatalogue JSONReader::BuildTransportCatalogue() {
+        TransportCatalogue transport_catalogue;
         for (const auto& stop : FirstIteration(json_requests_)) {
-            transport_catalogue_.AddStop(stop);
+            transport_catalogue.AddStop(stop);
         }
         const auto second_iter_parse = SecondIteration(json_requests_);
         for (const auto& [stop, neighbour_stops] : second_iter_parse.distances) {
-            transport_catalogue_.AddDistances(stop, neighbour_stops);
+            transport_catalogue.AddDistances(stop, neighbour_stops);
         }
         for (const auto& [bus, stops] : second_iter_parse.bus) {
             Bus bus_to_add;
             bus_to_add.name = std::string(bus);
             for (const auto& stop: stops) {
-                bus_to_add.stops.push_back(&transport_catalogue_.FindStop(stop));
+                bus_to_add.stops.push_back(&transport_catalogue.FindStop(stop));
             }
             bus_to_add.is_roundtrip = second_iter_parse.busname_to_roundtrip.at(bus);
-            transport_catalogue_.AddBus(bus_to_add);
+            transport_catalogue.AddBus(bus_to_add);
         }
-        transport_catalogue_.AddRoutingSettings(ReadRouteSettings(json_requests_));
+        transport_catalogue.AddRoutingSettings(ReadRouteSettings(json_requests_));
+        renderer_ = std::make_unique<renderer::MapRenderer>(ReadRenderSettings());
+        return transport_catalogue;
     }
 
-    // RoutingSettings routing_settings
     RoutingSettings JSONReader::ReadRouteSettings(const json::Document& json_requests) {
         RoutingSettings out;
         const auto &routing_settings = json_requests.GetRoot().AsDict().at("routing_settings"s);
@@ -138,12 +140,12 @@ namespace catalogue {
     const json::Document& JSONReader::GetJSONRequests() {
             return json_requests_;
     }
-    const TransportCatalogue& JSONReader::GetTransportCatalogue() {
-            return transport_catalogue_;
-    }
-    const renderer::MapRenderer& JSONReader::GetRenderer() {
-        return renderer_;
-    }
 
+    const renderer::MapRenderer& JSONReader::GetRenderer() {
+        return *renderer_.get();
+    }
+    const std::string JSONReader::GetFilename() {
+        return filename_;
+    }
 
 } // namespace catalogue

@@ -2,10 +2,11 @@
 
 using namespace catalogue;
 
-RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer)
-    : db_(db)
-    , renderer_(renderer)
-    , transport_router_(TransportRouter(db)) {
+RequestHandler::RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer,
+                               const TransportRouter& transport_router)
+        : db_(db)
+        , renderer_(renderer)
+        , transport_router_(transport_router) {
 }
 
 TransportCatalogue::BusInfo RequestHandler::GetBusInfo(const std::string_view& name) const {
@@ -128,5 +129,9 @@ json::Document RequestHandler::MakeJSONDocument(const json::Document& json_reque
     }
     json::Document out_doc(json::Node{out});
     return out_doc;
+}
+
+const TransportRouter& RequestHandler::GetTransportRouter() const {
+    return transport_router_;
 }
 

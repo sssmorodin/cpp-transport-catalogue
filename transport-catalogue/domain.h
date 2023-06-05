@@ -21,7 +21,7 @@ namespace catalogue {
         uint64_t route_length = 0;
         bool is_roundtrip;
 
-        std::pair<double, uint64_t> ComputeRouteLength();
+        //std::pair<double, uint64_t> ComputeRouteLength();
     };
 
     struct RoutingSettings {
